@@ -1,13 +1,14 @@
 import express from "express"
 import cors from "cors"
-import { Schema, z } from "zod"
-import fs from "fs/promises"
-import { hash } from "./util/hash"
+import { z } from "zod"
+import { hash, compare } from "./util/hash"
+import jwt from "jsonwebtoken"
 
 import { GameSchema, UserSchema } from "./model"
 import { save, load } from "./util/db"
 
 const server = express()
+const serverPassword = "dghsdskasdasf"
 
 server.use(cors())
 server.use(express.json())
@@ -42,12 +43,53 @@ server.post("/api/signup", async (req, res) => {
   return res.json({ id })
 })
 
+const LoginRequestSchema = z.object({
+  name: z.string().min(3),
+  password: z.string().min(3)
+})
 
 // name -> id
-server.post("/api/login")
+server.post("/api/login", async (req, res) => {
+  const result = LoginRequestSchema.safeParse(req.body)
+  if (!result.success) return res.sendStatus(400).json(result.error.issues)
+
+  const { name, password } = result.data
+
+  const users = await load("users", UserSchema.array())
+  if (!users) return res.sendStatus(500)
+
+  const user = users.find(user => user.name === name)
+  if (!user) return res.sendStatus(401)
+
+  const isAuthenticated = await compare(password, user.password)
+  if (!isAuthenticated) return res.sendStatus(401)
+
+  const token = jwt.sign({ name: user.name }, serverPassword, { expiresIn: "1h" })
+
+  return res.json({ token })
+})
+
+const Headers = z.object({
+  auth: z.string()
+})
 
 // id -> 200/400/500
-server.post("/api/game")
+server.post("/api/game", async (req, res) => {
+  const result = Headers.safeParse(req.headers)
+  if (!result.success) return res.sendStatus(401)
+
+  const { auth } = result.data
+
+  let tokenPayload;
+
+  try {
+    tokenPayload = jwt.verify(auth, serverPassword)
+  } catch (error) {
+    return res.sendStatus(401)
+  }
+
+  res.json({ msg: "ok" })
+})
 
 // id (user), id (game) -> 200/400/500
 server.post("/api/join") // added to requests

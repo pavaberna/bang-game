@@ -3,5 +3,20 @@
     "id": 0.27934495397177717,
     "name": "hello",
     "password": "$2b$10$Dtno6uNhdkvP3pUkhMXAI.0NdLk/3g9.xMpjIkrlakWIPOA.j2WN."
+  },
+  {
+    "id": 0.22344187986189357,
+    "name": "alma",
+    "password": "$2b$10$mbc/yDYzNkgDtMFhLWTmQupbzfy5ED6x.Mf5oLy9UBn4kSwbenzzu"
+  },
+  {
+    "id": 0.5325775184291521,
+    "name": "alma2",
+    "password": "$2b$10$g7L28qIQN0GDwViWaCMJquA4z/r36hmdLJ9mdVCJOMAqkq.3r4DxS"
+  },
+  {
+    "id": 0.07518673757670302,
+    "name": "alma5",
+    "password": "$2b$10$/Qa9yR0MnRAUd1hoesE7LOFL2wOyvaU1CpPjwowELvQbjKO33WEZ."
   }
 ]

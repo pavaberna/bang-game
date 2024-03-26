@@ -21,14 +21,18 @@ export const safeFetch = async <Schema extends z.ZodTypeAny>(
     schema: Schema
 ): Promise<Response<z.infer<typeof schema>>> => {
 
+    const token = localStorage.getItem("token")
     let response;
     try {
-        const { url, method, data } = params
+        const { url, method, data } = params;
         response = await fetch(baseUrl + url, {
             method,
             headers: data ? {
-                'Content-Type': "application/JSON"
-            } : {},
+                'Content-Type': "application/JSON",
+                'auth': token || "",
+            } : {
+                'auth': token || ""
+            },
             body: data ? JSON.stringify(data) : undefined
         })
     } catch (error) {
