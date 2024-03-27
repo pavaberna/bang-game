@@ -13,7 +13,7 @@ const serverPassword = "dghsdskasdasf"
 server.use(cors())
 server.use(express.json())
 
-// name -> id
+
 const SignUpRequestSchema = z.object({
   name: z.string().min(3),
   password: z.string().min(3)
@@ -22,77 +22,178 @@ const SignUpRequestSchema = z.object({
 
 server.post("/api/signup", async (req, res) => {
   const result = SignUpRequestSchema.safeParse(req.body)
-  if (!result.success) return res.sendStatus(400).json(result.error.issues)
+  if (!result.success)
+    return res.sendStatus(400).json(result.error.issues)
 
   const postData = result.data
   const { name, password } = postData
 
   const users = await load("users", UserSchema.array())
-  if (!users) return res.sendStatus(500)
+  if (!users)
+    return res.sendStatus(500)
 
   const userAlreadyExists = users.some(user => user.name === name)
-  if (userAlreadyExists) return res.sendStatus(409)
+  if (userAlreadyExists)
+    return res.sendStatus(409)
 
   const id = Math.random()
   const hashedPassword = await hash(password)
   users.push({ id, name, password: hashedPassword })
 
   const isSuccessful = await save("users", users, UserSchema.array())
-  if (!isSuccessful) return res.sendStatus(500)
+  if (!isSuccessful)
+    return res.sendStatus(500)
 
   return res.json({ id })
 })
+
 
 const LoginRequestSchema = z.object({
   name: z.string().min(3),
   password: z.string().min(3)
 })
 
-// name -> id
+
 server.post("/api/login", async (req, res) => {
   const result = LoginRequestSchema.safeParse(req.body)
-  if (!result.success) return res.sendStatus(400).json(result.error.issues)
+  if (!result.success)
+    return res.sendStatus(400).json(result.error.issues)
 
   const { name, password } = result.data
 
   const users = await load("users", UserSchema.array())
-  if (!users) return res.sendStatus(500)
+  if (!users)
+    return res.sendStatus(500)
 
   const user = users.find(user => user.name === name)
-  if (!user) return res.sendStatus(401)
+  if (!user)
+    return res.sendStatus(401)
 
-  const isAuthenticated = await compare(password, user.password)
-  if (!isAuthenticated) return res.sendStatus(401)
+  const isCorrect = await compare(password, user.password)
+  if (!isCorrect)
+    return res.sendStatus(401)
 
   const token = jwt.sign({ name: user.name }, serverPassword, { expiresIn: "1h" })
 
   return res.json({ token })
 })
 
+
 const Headers = z.object({
-  auth: z.string()
+  auth: z.string(),
 })
 
-// id -> 200/400/500
-server.post("/api/game", async (req, res) => {
+
+const safeVerify = <Schema extends z.ZodTypeAny>(
+  token: string, schema: Schema
+): z.infer<typeof schema> | null => {
+  try {
+    const tokenPayload = jwt.verify(token, serverPassword)
+    return schema.parse(tokenPayload)
+  } catch (error) {
+    return null
+  }
+}
+
+
+server.use(async (req, res, next) => {
   const result = Headers.safeParse(req.headers)
-  if (!result.success) return res.sendStatus(401)
+  if (!result.success)
+    return next()
 
   const { auth } = result.data
+  if (!auth)
+    return next()
 
-  let tokenPayload;
+  const tokenPayload = safeVerify(auth, z.object({ name: z.string() }))
+  if (!tokenPayload)
+    return next()
 
-  try {
-    tokenPayload = jwt.verify(auth, serverPassword)
-  } catch (error) {
-    return res.sendStatus(401)
-  }
+  const users = await load("users", UserSchema.omit({ password: true }).array())
+  if (!users)
+    return res.sendStatus(500)
 
-  res.json({ msg: "ok" })
+  const user = users.find(user => user.name === tokenPayload.name)
+  if (!user)
+    return next()
+
+  res.locals.user = user
+  next()
 })
 
-// id (user), id (game) -> 200/400/500
-server.post("/api/join") // added to requests
+
+type User = z.infer<typeof UserSchema>
+
+
+server.post("/api/game", async (req, res) => {
+  const user = res.locals.user as User
+  if (!user)
+    return res.sendStatus(401)
+
+  const id = Math.random()
+  const newGame = {
+    id,
+    admin: user.name,
+    requests: [],
+    joinedUsers: [],
+    players: [],
+    communityCards: [],
+    usedCards: [],
+    logs: [],
+    unusedCards: [],
+  }
+
+  const games = await load("games", GameSchema.array())
+  if (!games)
+    return res.sendStatus(500)
+
+  games.push(newGame)
+
+  const saveResult = await save("games", games, GameSchema.array())
+  if (!saveResult.success)
+    return res.sendStatus(500)
+
+  res.json({ id })
+})
+
+
+const JoinRequestSchema = z.object({
+  id: z.number(),
+})
+
+
+server.post("/api/join", async (req, res) => {
+  const user = res.locals.user as Omit<User, "password">
+  if (!user)
+    return res.sendStatus(401)
+
+  const result = JoinRequestSchema.safeParse(req.body)
+  if (!result.success)
+    return res.sendStatus(400)
+  const { id } = result.data
+
+  const games = await load("games", GameSchema.array())
+  if (!games)
+    return res.sendStatus(500)
+
+  const gameToUpdate = games.find(game => game.id === id)
+  if (!gameToUpdate)
+    return res.sendStatus(404)
+
+
+  if (gameToUpdate.admin === user.name) {
+    gameToUpdate.joinedUsers.push(user)
+  } else {
+    gameToUpdate.requests.push(user)
+  }
+
+  const saveResult = await save("games", games.map(game => game.id === id ? gameToUpdate : game), GameSchema.array())
+
+  if (!saveResult.success)
+    return res.sendStatus(500)
+
+  res.json({ id })
+})
 
 // id (game) -> game
 server.get("/api/state/:id")
