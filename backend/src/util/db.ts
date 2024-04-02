@@ -12,7 +12,6 @@ export const load = async <Schema extends z.ZodTypeAny>(
         const validatedData = schema.parse(data)
         return validatedData
     } catch (error) {
-        console.log(error)
         return null
     }
 }

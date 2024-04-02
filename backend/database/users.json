@@ -3,5 +3,15 @@
     "id": 0.8953043755655896,
     "name": "alma",
     "password": "$2b$10$JU27YQFsju3xzDBwQjxPNuErL0ejdAra6rr/dMuVvUvPyJDJOgxSK"
+  },
+  {
+    "id": 0.19846903290932927,
+    "name": "berni",
+    "password": "$2b$10$Gh5bcGiV0HEWs6YZLfn5nuZeTc53DfhS7jpBAO7o83SBK7VHldf8W"
+  },
+  {
+    "id": 0.9122065510924375,
+    "name": "körte",
+    "password": "$2b$10$t.AQrID2MX8zy98YMMzpReqmgPl7fX8m5rCKJ/hx7Oe72ene/u4oO"
   }
 ]

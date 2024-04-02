@@ -13,12 +13,10 @@ const serverPassword = "dghsdskasdasf"
 server.use(cors())
 server.use(express.json())
 
-
 const SignUpRequestSchema = z.object({
   name: z.string().min(3),
   password: z.string().min(3)
 })
-
 
 server.post("/api/signup", async (req, res) => {
   const result = SignUpRequestSchema.safeParse(req.body)
@@ -47,17 +45,15 @@ server.post("/api/signup", async (req, res) => {
   return res.json({ id })
 })
 
-
 const LoginRequestSchema = z.object({
   name: z.string().min(3),
   password: z.string().min(3)
 })
 
-
 server.post("/api/login", async (req, res) => {
   const result = LoginRequestSchema.safeParse(req.body)
   if (!result.success)
-    return res.sendStatus(400).json(result.error.issues)
+    return res.sendStatus(400)
 
   const { name, password } = result.data
 
@@ -78,11 +74,9 @@ server.post("/api/login", async (req, res) => {
   return res.json({ token })
 })
 
-
 const Headers = z.object({
   auth: z.string(),
 })
-
 
 const safeVerify = <Schema extends z.ZodTypeAny>(
   token: string, schema: Schema
@@ -94,7 +88,6 @@ const safeVerify = <Schema extends z.ZodTypeAny>(
     return null
   }
 }
-
 
 server.use(async (req, res, next) => {
   const result = Headers.safeParse(req.headers)
@@ -121,19 +114,18 @@ server.use(async (req, res, next) => {
   next()
 })
 
-
 type User = z.infer<typeof UserSchema>
-
 
 server.post("/api/game", async (req, res) => {
   const user = res.locals.user as User
   if (!user)
     return res.sendStatus(401)
 
-  const id = Math.random()
+  const id = Math.floor(Math.random() * 10000)
   const newGame = {
     id,
     admin: user.name,
+    hasStarted: false,
     requests: [],
     joinedUsers: [],
     players: [],
@@ -156,11 +148,9 @@ server.post("/api/game", async (req, res) => {
   res.json({ id })
 })
 
-
 const JoinRequestSchema = z.object({
   id: z.number(),
 })
-
 
 server.post("/api/join", async (req, res) => {
   const user = res.locals.user as Omit<User, "password">
@@ -180,6 +170,10 @@ server.post("/api/join", async (req, res) => {
   if (!gameToUpdate)
     return res.sendStatus(404)
 
+  if (
+    gameToUpdate.requests.find(player => player.name === user.name) ||
+    gameToUpdate.joinedUsers.find(player => player.name === user.name)
+  ) return res.json({ id })
 
   if (gameToUpdate.admin === user.name) {
     gameToUpdate.joinedUsers.push(user)
@@ -196,10 +190,99 @@ server.post("/api/join", async (req, res) => {
 })
 
 // id (game) -> game
-server.get("/api/state/:id")
+server.get("/api/game/:id", async (req, res) => {
+  const user = res.locals.user as Omit<User, "password">
+  if (!user)
+    return res.sendStatus(401)
 
-// id (user) id (game) -> 200/400/500
-server.post("/api/authorize") // from requests to players
+  const games = await load("games", GameSchema.array())
+  if (!games)
+    return res.sendStatus(500)
+
+  const id = req.params.id
+  const game = games.find(game => game.id === +id)
+  if (!game)
+    return res.sendStatus(404)
+
+  return res.json(game)
+})
+
+const AuthorizeRequest = z.object({
+  gameId: z.number(),
+  userId: z.number(),
+})
+
+server.post("/api/authorize", async (req, res) => {
+  const user = res.locals.user as Omit<User, "password">
+  if (!user)
+    return res.sendStatus(401)
+
+  const result = AuthorizeRequest.safeParse(req.body)
+  if (!result.success)
+    return res.sendStatus(400)
+
+  const games = await load("games", GameSchema.array())
+  if (!games)
+    return res.sendStatus(500)
+
+  const id = result.data.gameId
+  const gameToUpdate = games.find(game => game.id === +id)
+  if (!gameToUpdate)
+    return res.sendStatus(404)
+
+  if (gameToUpdate.admin !== user.name) {
+    return res.sendStatus(403)
+  }
+
+  const userId = result.data.userId
+  const userToAuth = gameToUpdate.requests.find(player => player.id === userId)
+  if (!userToAuth)
+    return res.sendStatus(400)
+
+  gameToUpdate.requests = gameToUpdate.requests.filter(player => player.id !== userId)
+  gameToUpdate.joinedUsers.push(userToAuth)
+
+  const saveResult = await save("games", games.map(game => game.id === id ? gameToUpdate : game), GameSchema.array())
+
+  if (!saveResult.success)
+    return res.sendStatus(500)
+
+  res.json(saveResult)
+})
+
+server.delete("/api/game/:gameid/:username", async (req, res) => {
+  const user = res.locals.user as Omit<User, "password">
+  if (!user)
+    return res.sendStatus(401)
+
+  const games = await load("games", GameSchema.array())
+  if (!games)
+    return res.sendStatus(500)
+
+  const id = req.params.gameid
+  const gameToUpdate = games.find(game => game.id === +id)
+  if (!gameToUpdate)
+    return res.sendStatus(404)
+
+  const username = req.params.username
+  const playerToDelete = gameToUpdate.joinedUsers.find(user => user.name === username)
+  if (!playerToDelete)
+    return res.sendStatus(404)
+
+  const canDelete = playerToDelete.name === user.name || gameToUpdate.admin === user.name
+
+  if (!canDelete)
+    return res.sendStatus(403)
+
+  gameToUpdate.joinedUsers = gameToUpdate.joinedUsers.filter(user => user.name !== username)
+
+  const saveResult = await save("games", games.map(game => game.id === +id ? gameToUpdate : game), GameSchema.array())
+
+  if (!saveResult.success)
+    return res.sendStatus(500)
+
+  res.json(saveResult)
+})
 
 // id (game) -> 200/400/500
 server.post("/api/start")
