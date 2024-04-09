@@ -17,17 +17,17 @@ type Params = {
     data?: any;
 };
 
+const baseUrl = 'http://localhost:3000';
 
-const safeFetch = async <Schema extends z.ZodTypeAny>(
+export const safeFetch = async <Schema extends z.ZodTypeAny>(
     params: Params,
     schema: Schema
 ): Promise<Response<z.infer<typeof schema>>> => {
     const token = localStorage.getItem('token')
-
     let response;
     try {
         const { path, method, data } = params;
-        response = await fetch(path, {
+        response = await fetch(baseUrl + path, {
             method,
             headers: data
                 ? {
@@ -43,7 +43,6 @@ const safeFetch = async <Schema extends z.ZodTypeAny>(
             status: null,
         };
     }
-    console.log(response)
 
     if (response.status > 299)
         return {
@@ -75,4 +74,3 @@ const safeFetch = async <Schema extends z.ZodTypeAny>(
     };
 };
 
-export default safeFetch;

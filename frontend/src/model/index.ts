@@ -13,23 +13,20 @@ export const RoleSchema = z.object({
         z.literal("Renegade"),
         z.literal("Bandit"),
     ]),
-    imgUrl: z.string().url(),
+    imgUrl: z.string(),
 })
 
 export const CharacterSchema = z.object({
     name: z.string(),
-    imgUrl: z.string().url(),
+    imgUrl: z.string(),
     description: z.string(),
+    life: z.number(),
 })
 
 export const CardSchema = z.object({
-    isInstant: z.boolean(),
     title: z.string(),
     imgUrl: z.string(),
-    description: z.object({
-        text: z.string(),
-        imgUrl: z.string().url(),
-    }),
+    isInstant: z.boolean(),
     signature: z.object({
         number: z.string(),
         sign: z.string(),
@@ -37,7 +34,7 @@ export const CardSchema = z.object({
 })
 
 export const PlayerSchema = z.object({
-    userId: z.number(),
+    name: z.string(),
     role: RoleSchema,
     isRevealed: z.boolean(),
     character: CharacterSchema,

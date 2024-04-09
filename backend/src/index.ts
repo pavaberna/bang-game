@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken"
 
 import { GameSchema, UserSchema } from "./model"
 import { save, load } from "./util/db"
+import { createDeck, getCharacters, getRoles } from "./util/bang"
 
 const server = express()
 const serverPassword = "dghsdskasdasf"
@@ -285,7 +286,61 @@ server.delete("/api/game/:gameid/:username", async (req, res) => {
 })
 
 // id (game) -> 200/400/500
-server.post("/api/start")
+server.post("/api/start/:gameId", async (req, res) => {
+  const user = res.locals.user as Omit<User, "password">
+  if (!user)
+    return res.sendStatus(401)
+
+  const games = await load("games", GameSchema.array())
+  if (!games)
+    return res.sendStatus(500)
+
+  const id = req.params.gameId
+  const gameToUpdate = games.find(game => game.id === +id)
+  if (!gameToUpdate)
+    return res.sendStatus(404)
+
+  const canStart = gameToUpdate.admin === user.name && gameToUpdate.joinedUsers.length <= 7 && gameToUpdate.joinedUsers.length >= 4
+  if (!canStart)
+    return res.sendStatus(403)
+
+  gameToUpdate.hasStarted = true
+  gameToUpdate.requests = []
+
+  const numberOfPlayers = gameToUpdate.joinedUsers.length
+  const roles = getRoles(numberOfPlayers)
+  const characters = getCharacters(numberOfPlayers)
+  const deck = createDeck()
+  gameToUpdate.players = gameToUpdate.joinedUsers.map((user, index) => {
+    const role = roles[index]
+    const character = characters[index]
+    const life = role.name === "Sheriff" ? character.life + 1 : character.life
+    const drawnCards = deck.splice(0, life)
+    return {
+      name: user.name,
+      role,
+      character,
+      isRevealed: role.name === "Sheriff",
+      life,
+      isActive: role.name === "Sheriff",
+      cardsInHand: drawnCards,
+      inventoryCards: [],
+      playedCards: [],
+    }
+  })
+
+  gameToUpdate.joinedUsers = []
+  gameToUpdate.unusedCards = deck
+
+  const saveResult = await save("games", games.map(game => game.id === +id ? gameToUpdate : game), GameSchema.array())
+
+  if (!saveResult.success)
+    return res.sendStatus(500)
+
+  res.json(saveResult)
+
+})
+
 // last join -> role, character, isActive calculations, shuffled (unused) cards
 /* 
   "Sheriff",

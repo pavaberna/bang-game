@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import "./index.css"
 import { signup, login, createGame, joinGame } from './api'
 import Game from "./components/Game"
 
@@ -15,6 +14,7 @@ function App() {
   const [signupSuccess, setSignupSuccess] = useState<boolean | null>(null)
   const [loginSuccess, setLoginSuccess] = useState<boolean | null>(localStorage.getItem('token') ? true : null)
   const [joinError, setJoinError] = useState(false)
+
   const [inGame, setInGame] = useState<number | null>(null)
 
   const handleSignup = async () => {
@@ -24,8 +24,8 @@ function App() {
 
   const handleLogin = async () => {
     const response = await login(name, password)
+    setLoginSuccess(response.success)
     if (response.success) {
-      setLoginSuccess(true)
       setLoggedInUserName(name)
       setName("")
       setPassword("")
@@ -38,7 +38,6 @@ function App() {
     if (!response.success) return
     setCreateGameId(response.data.id)
   }
-
 
   const copy = () => {
     if (createdGameId) {
@@ -56,8 +55,10 @@ function App() {
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
+    setCreateGameId(null)
     setLoginSuccess(null)
+    setInputGameId("")
+    localStorage.removeItem('token')
   }
 
   // polling - /\..../\..../\....
@@ -66,9 +67,9 @@ function App() {
 
   return (
     <>
-      {!inGame ? (
-        <>
-          {!loginSuccess ? (
+      {!inGame && (
+        <div>
+          {!loginSuccess && (
             <main className="flex flex-col items-center py-16">
               <section className="card card-body max-w-[300px] bg-primary text-primary-content mb-8">
                 <input value={name} onChange={(e => setName(e.target.value))} type="text" className='input input-bordered' placeholder="username" />
@@ -77,27 +78,30 @@ function App() {
                 <button onClick={handleLogin} className="btn btn-success" >Login</button>
               </section>
 
-              {signupSuccess === true &&
+              {signupSuccess === true && (
                 <section className='alert alert-success flex justify-between max-w-[300px]'>
                   Success!!
                   <button onClick={() => setSignupSuccess(null)} className='bnt btn-ghost'>Close</button>
                 </section>
-              }
-              {signupSuccess === false &&
+              )}
+
+              {signupSuccess === false && (
                 <section className='alert alert-error flex justify-between max-w-[300px]'>
                   Error!!
                   <button onClick={() => setSignupSuccess(null)} className='bnt btn-ghost' >Close</button>
                 </section>
-              }
-              {loginSuccess === false &&
+              )}
+
+              {loginSuccess === false && (
                 <section className='alert alert-error flex justify-between w-[300px]'>
                   Error!!
                   <button onClick={() => setLoginSuccess(null)} className='bnt btn-ghost' >Close</button>
                 </section>
-              }
+              )}
             </main>
+          )}
 
-          ) : (
+          {loginSuccess && (
             <main className="flex flex-col items-center py-16">
               <section className='card bg-secondary text-secondary-content w-[300px] mb-8'>
                 <div className='card-body'>
@@ -106,9 +110,11 @@ function App() {
                   </div>
                   <div className='divider'>New game</div>
 
-                  {!createdGameId ? (
+                  {!createdGameId && (
                     <button onClick={handleCreate} className="btn btn-neutral" >Create</button>
-                  ) : (
+                  )}
+
+                  {createdGameId && (
                     <div className="w-full">
                       <p className="text-center pb-2 font-bold">Game created!</p>
                       <p className="text-center pb-4">{createdGameId}</p>
@@ -119,8 +125,8 @@ function App() {
                         <button onClick={() => handleJoin(createdGameId)} className="btn btn-neutral grow">Join</button>
                       </div>
                     </div>
-                  )
-                  }
+                  )}
+
                   <div className="divider">Join game</div>
                   <input value={inputGameId} onChange={(e) => setInputGameId(e.target.value)} className="input input-bordered" placeholder="Game ID" type="text" />
                   <button onClick={() => handleJoin(+inputGameId)} className="btn btn-neutral">Join</button>
@@ -133,23 +139,22 @@ function App() {
                 <section className="alert alert-error flex justify-between w-[300px]">
                   Error!!!
                   <button onClick={() => setJoinError(false)} className="btn btn-ghost">Close</button>
-                </section>)
-              }
+                </section>
+              )}
             </main >
-          )
-          }
-        </>
-      ) : (
-        <>
-          {loggedInUserName && (
-            <main className='flex flex-col items-center py-16'>
-              <Game onBack={() => setInGame(null)} loggedInUserName={loggedInUserName} gameId={inGame}></Game>
-            </main>
           )}
-        </>
+        </div>
+      )}
+
+      {(inGame && loggedInUserName) && (
+        <main className='flex flex-col items-center py-16'>
+          <Game back={() => setInGame(null)} loggedInUserName={loggedInUserName} gameId={inGame} />
+        </main>
       )}
     </>
+
   )
 }
+
 
 export default App
