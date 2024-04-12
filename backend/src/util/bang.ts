@@ -7,139 +7,139 @@ type Role = z.infer<typeof RoleSchema>
 
 export const createDeck = () => {
 
-    const bang: Omit<Card, "signature"> = {
+    const bang: Omit<Card, "signature" | "id"> = {
         title: "Bang",
         isInstant: true,
         imgUrl: "pistolUrl",
     }
 
-    const missed: Omit<Card, "signature"> = {
+    const missed: Omit<Card, "signature" | "id"> = {
         title: "Nem talált!",
         isInstant: true,
         imgUrl: "missedUrl",
     }
 
-    const beer: Omit<Card, "signature"> = {
+    const beer: Omit<Card, "signature" | "id"> = {
         title: "Sör",
         isInstant: true,
         imgUrl: "beerUrl",
     }
 
-    const panic: Omit<Card, "signature"> = {
+    const panic: Omit<Card, "signature" | "id"> = {
         title: "Pánik!",
         isInstant: true,
         imgUrl: "panicUrl",
     }
 
-    const catBalou: Omit<Card, "signature"> = {
+    const catBalou: Omit<Card, "signature" | "id"> = {
         title: "Cat Balou",
         isInstant: true,
         imgUrl: "catBalouUrl",
     }
 
-    const duel: Omit<Card, "signature"> = {
+    const duel: Omit<Card, "signature" | "id"> = {
         title: "Párbaj",
         isInstant: true,
         imgUrl: "duelUrl",
     }
 
-    const cart: Omit<Card, "signature"> = {
+    const cart: Omit<Card, "signature" | "id"> = {
         title: "Postakocsi",
         isInstant: true,
         imgUrl: "cartUrl",
     }
 
-    const store: Omit<Card, "signature"> = {
+    const store: Omit<Card, "signature" | "id"> = {
         title: "Szatócsbolt",
         isInstant: true,
         imgUrl: "storeUrl",
     }
 
-    const indians: Omit<Card, "signature"> = {
+    const indians: Omit<Card, "signature" | "id"> = {
         title: "Indiánok!",
         isInstant: true,
         imgUrl: "indiansUrl",
     }
 
-    const wellsFargo: Omit<Card, "signature"> = {
+    const wellsFargo: Omit<Card, "signature" | "id"> = {
         title: "Wells Fargo",
         isInstant: true,
         imgUrl: "wellsUrl",
     }
 
-    const gatling: Omit<Card, "signature"> = {
+    const gatling: Omit<Card, "signature" | "id"> = {
         title: "Gatling",
         isInstant: true,
         imgUrl: "gatlingUrl",
     }
 
-    const pub: Omit<Card, "signature"> = {
+    const pub: Omit<Card, "signature" | "id"> = {
         title: "Kocsma",
         isInstant: true,
         imgUrl: "pubUrl",
     }
 
-    const schofield: Omit<Card, "signature"> = {
+    const schofield: Omit<Card, "signature" | "id"> = {
         title: "Schofield (2)",
         isInstant: false,
         imgUrl: "schofieldUrl",
     }
 
-    const vulcanic: Omit<Card, "signature"> = {
+    const vulcanic: Omit<Card, "signature" | "id"> = {
         title: "Gyorstüzelő (1)",
         isInstant: false,
         imgUrl: "vulcanicUrl",
     }
 
-    const remington: Omit<Card, "signature"> = {
+    const remington: Omit<Card, "signature" | "id"> = {
         title: "Remington (3)",
         isInstant: false,
         imgUrl: "vulcanicUrl",
     }
 
-    const gun: Omit<Card, "signature"> = {
+    const gun: Omit<Card, "signature" | "id"> = {
         title: "Gépkarabély (4)",
         isInstant: false,
         imgUrl: "gunUrl",
     }
 
-    const winchester: Omit<Card, "signature"> = {
+    const winchester: Omit<Card, "signature" | "id"> = {
         title: "Winchester (5)",
         isInstant: false,
         imgUrl: "vulcanicUrl",
     }
 
-    const prison: Omit<Card, "signature"> = {
+    const prison: Omit<Card, "signature" | "id"> = {
         title: "Börtön",
         isInstant: false,
         imgUrl: "prisonUrl",
     }
 
-    const barrel: Omit<Card, "signature"> = {
+    const barrel: Omit<Card, "signature" | "id"> = {
         title: "Hordó",
         isInstant: false,
         imgUrl: "barrelUrl",
     }
 
-    const mustang: Omit<Card, "signature"> = {
+    const mustang: Omit<Card, "signature" | "id"> = {
         title: "Musztáng",
         isInstant: false,
         imgUrl: "mustangUrl",
     }
 
-    const telescope: Omit<Card, "signature"> = {
+    const telescope: Omit<Card, "signature" | "id"> = {
         title: "Távcső",
         isInstant: false,
         imgUrl: "telescopeUrl",
     }
 
-    const dynamite: Omit<Card, "signature"> = {
+    const dynamite: Omit<Card, "signature" | "id"> = {
         title: "Dinamit",
         isInstant: false,
         imgUrl: "dynamiteUrl",
     }
 
-    const cardsWithoutSignatures: (Omit<Card, "signature">)[] = [
+    const cardsWithoutSignatures: (Omit<Card, "signature" | "id">)[] = [
         ...Array.from({ length: 25 }, () => ({ ...bang })),
         ...Array.from({ length: 12 }, () => ({ ...missed })),
         ...Array.from({ length: 6 }, () => ({ ...beer })),
@@ -182,8 +182,8 @@ export const createDeck = () => {
         for (const number of numbers) {
             const card = shuffled[index]
             cards.push({
-                ...card, signature: {
-                    sign, number
+                ...card, id: Math.random(), signature: {
+                    sign, number,
                 }
             })
             index += 1

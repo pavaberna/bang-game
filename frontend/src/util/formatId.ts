@@ -1,0 +1,1 @@
+export const formatId = (id: number) => `#${id.toString().substring(2, 6)}`
